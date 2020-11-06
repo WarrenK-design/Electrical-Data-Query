@@ -27,10 +27,10 @@ const path = require('path');
 // creatLogger  - Method for creating a winston logger
 // format       - Used to format the messages in the winston logger 
 // transports   - Used to define how log messages are transprted (file,console,etc)  
-var bearer       = process.env.BEARER
+var bearer       = 'Bearer '+process.env.BEARER
 var aeotec_code  = '0086-0003-0060'
 var qubino_code  = '0159-0007-0052'
-var ids          = {};
+var ids          
 var eventEmitter = new events.EventEmitter();
 var job          = '';
 const { createLogger, format, transports } = require('winston');
@@ -75,17 +75,22 @@ var get_devices = {
 axios(get_devices)
 // If the promise is fufilled then enter this function 
 .then(function (response) {
+  console.log(response.data.items)
   for (i = 0; i < response.data.items.length; i++) {
    // console.log(response.data)
     let id = response.data.items[i].deviceManufacturerCode
     // Test and see if there are any meters in the setup 
     if (id == qubino_code){
+      console.log("Found Qubiono")
       ids[response.data.items[i].label] = response.data.items[i].deviceId
     } 
   }
+  console.log(ids)
   // If a meter id found st of the meter found event 
-  if(ids){
+  if(ids){ // This is going into even though its not true
     eventEmitter.emit('metersfound');
+  }else{
+    console.log("No Meter Found")
   }
 })
 .catch(function (error) {
@@ -125,10 +130,10 @@ function query_meters() {
       var energy = response.data.components.main.energyMeter.energy.value
     //  var energy_unit = response.data.components.main.energyMeter.energy.unit
       var energy_unit = "kWh"
-    // console.log(ids[key])
-//      console.log(power, power_unit);
-  //    console.log(voltage,voltage_unit);
-    //  console.log(energy,energy_unit);
+    console.log(ids[key])
+      console.log(power, power_unit);
+      console.log(voltage,voltage_unit);
+      console.log(energy,energy_unit);
       var points = [
         {
            measurement: 'Power',
