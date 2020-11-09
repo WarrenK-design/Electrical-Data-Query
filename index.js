@@ -30,7 +30,7 @@ const path = require('path');
 var bearer       = 'Bearer '+process.env.BEARER
 var aeotec_code  = '0086-0003-0060'
 var qubino_code  = '0159-0007-0052'
-var ids          
+var ids          = [] 
 var eventEmitter = new events.EventEmitter();
 var job          = '';
 const { createLogger, format, transports } = require('winston');
@@ -60,47 +60,56 @@ const client = new Influx.InfluxDB({
   password: process.env.PASSWORD
 })
 
-/// HTTP Requets ///
-// Stored in variables to make easier to change 
-// get_devices - Http command to get device  
-var get_devices = {
-  method: 'get',
-  url: 'https://api.smartthings.com/v1/devices',
-  headers: { 
-    'Authorization': bearer
-  }
+async function getDevices(){
+try {
+  /// HTTP Requets ///
+  // Stored in variables to make easier to change 
+  // get_devices - Http command to get device  
+  var get_devices = {
+    method: 'get',
+    url: 'https://api.smartthings.com/v1/devices',
+    headers: { 
+      'Authorization': 'Bearer '+process.env.BEARER
+    }
 };
-
-// Send request to get the devices in the setup 
-axios(get_devices)
-// If the promise is fufilled then enter this function 
-.then(function (response) {
-  console.log(response.data.items)
-  for (i = 0; i < response.data.items.length; i++) {
+  // Make the call to the api to get the devices 
+  let res = await axios(get_devices);
+  // Iterate through the returned devices to see if there is a Meter 
+  for (i = 0; i < res.data.items.length; i++) {
    // console.log(response.data)
-    let id = response.data.items[i].deviceManufacturerCode
+    let id = res.data.items[i].deviceManufacturerCode
     // Test and see if there are any meters in the setup 
-    if (id == qubino_code){
-      console.log("Found Qubiono")
-      ids[response.data.items[i].label] = response.data.items[i].deviceId
-    } 
+    if (id == aeotec_code){
+      ids[res.data.items[i].label] = res.data.items[i].deviceId
+      console.log("Device Found",res.data.items[i].label,res.data.items[i].deviceId)
+    }
   }
-  console.log(ids)
   // If a meter id found st of the meter found event 
   if(ids){ // This is going into even though its not true
     eventEmitter.emit('metersfound');
   }else{
     console.log("No Meter Found")
   }
-})
-.catch(function (error) {
-  logger.error("Error",error);
-});
+// Catch any errors here 
+}catch(error){
+  logger.error(error)
+  if (error.response.statusText = "Unauthorized"){
+    logger.error("Bearer Token is Unathorised, Possibly Expired Token")
+}
+  }
+};
+
+var start = async function (){
+  await getDevices();
+}
+
+start();
+
 
 //Event handler for if a meter is found 
 var metersFound = function () {
  job = setInterval(query_meters,1000)
- //query_meters() 
+// query_meters() 
  console.log("Job ID:",job)
 }
 
@@ -122,7 +131,7 @@ function query_meters() {
     axios(config)
     .then(function (response){
       //console.log(response.data.components)
-    //  console.log(response.data.components.main)
+      console.log(response.data.components.main)
       var power      = response.data.components.main.powerMeter.power.value
       var power_unit = response.data.components.main.powerMeter.power.unit
       var voltage      = response.data.components.main.voltageMeasurement.voltage.value

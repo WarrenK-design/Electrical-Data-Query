@@ -1,3 +1,7 @@
+// BEFORE RUNNING //
+// Upadte the COGNITIOID and APPID in the .env file for the user
+
+
 require('dotenv').config()
 var AWS = require("aws-sdk");
 AWS.config.loadFromPath('./config.json');
