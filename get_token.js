@@ -1,7 +1,5 @@
 // BEFORE RUNNING //
 // Upadte the COGNITIOID and APPID in the .env file for the user
-
-
 require('dotenv').config()
 var AWS = require("aws-sdk");
 AWS.config.loadFromPath('./config.json');
@@ -35,7 +33,7 @@ db.get(params, function(err, data) {
 
 
 function write_file(token){
-  console.log(token)
+  console.log("Token in Database",token)
   fs.readFile(sourcePath, 'utf8', function (err,data) {
     if (err) {
       return console.log(err);
@@ -47,12 +45,10 @@ function write_file(token){
           break; 
       }
     }
-    console.log("Data",dataArray)
-    console.log("Index",lastIndex)
-    //console.log(dataArray[lastIndex])
     dataArray.splice(lastIndex, 1);
     dataArray.push('BEARER=Bearer '+token)
     const updatedData = dataArray.join('\n')
+    console.log("Writing to .env:\n",updatedData)
     fs.writeFile('.env', updatedData, (err) => {
         if (err) throw err;
         console.log ('Successfully updated the file data');
